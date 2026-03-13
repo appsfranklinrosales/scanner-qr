@@ -483,9 +483,18 @@
       }
     };
 
+    let frameCount = 0;
+
     function scanFrame() {
       if (!scanning) {
-        requestAnimationFrame(scanFrame);  // Seguir el loop aunque no esté escaneando
+        requestAnimationFrame(scanFrame);
+        return;
+      }
+
+      // Solo procesar 1 de cada 10 frames (reduce carga sin perder detección)
+      frameCount++;
+      if (frameCount % 10 !== 0) {
+        requestAnimationFrame(scanFrame);
         return;
       }
 
@@ -499,13 +508,13 @@
           inversionAttempts: 'dontInvert'
         });
 
-        if (code) {
+        if (code && code.data && code.data.trim() !== '') {
           const now = Date.now();
           if (code.data !== lastCode || (now - lastTime) > 3000) {
             lastCode = code.data;
             lastTime = now;
 
-          setStatus('Procesando...', 'activo');
+            setStatus('Procesando...', 'activo');
             mostrarResultado({
               nombre: 'Verificando...',
               detalle: 'Consultando servidor...'
@@ -519,18 +528,20 @@
               }, '*');
             }
 
-            // Pausar 3 segundos antes de volver a escanear
             scanning = false;
             setTimeout(() => {
-              lastCode = '';  // Limpiar último código para permitir el mismo QR
+              lastCode = '';
               scanning = true;
               setStatus('Esperando código QR...', 'activo');
             }, 3000);
+
+            requestAnimationFrame(scanFrame);
+            return;
           }
         }
       }
 
-      requestAnimationFrame(scanFrame);  // Siempre continuar el loop
+      requestAnimationFrame(scanFrame);
     }
 
     // Recibir resultado del servidor desde GAS
