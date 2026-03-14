@@ -486,9 +486,6 @@
       document.getElementById('resultadoNombre').textContent = datos.nombre || '';
       document.getElementById('resultadoDetalle').textContent = datos.detalle || '';
 
-      setTimeout(() => {
-        resultadoCard.className = 'resultado-card';
-      }, 4000);
     }
 
     // Iniciar cámara
@@ -585,17 +582,29 @@
 
       if (event.data.tipo === 'resultado_registro') {
         if (event.data.exito) {
-          setStatus('✅ ' + event.data.nombre + ' — Registrado', 'exito');
+          // Status solo dice "Registro exitoso" sin nombre
+          setStatus('Registro exitoso', 'exito');
+          // La tarjeta muestra el nombre completo del estudiante
           mostrarResultado({
             nombre: event.data.nombre,
             detalle: event.data.detalle
           }, 'exito');
+
+          // Después de 3 segundos, volver a "Esperando..."
+          setTimeout(() => {
+            setStatus('Esperando código QR...', 'activo');
+          }, 3000);
+
         } else {
-          setStatus('❌ Error en registro', 'error');
+          setStatus('Error en registro', 'error');
           mostrarResultado({
             nombre: event.data.nombre,
             detalle: event.data.detalle
           }, 'error');
+
+          setTimeout(() => {
+            setStatus('Esperando código QR...', 'activo');
+          }, 3000);
         }
       }
     });
