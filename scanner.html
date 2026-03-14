@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scanner QR — Conguaquense</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -309,8 +310,10 @@
     }
 
     .resultado-icono {
-      font-size: 2rem;
+      font-size: 1.8rem;
       flex-shrink: 0;
+      width: 40px;
+      text-align: center;
     }
 
     .resultado-info {
@@ -375,10 +378,10 @@
   <!-- SELECTOR ENTRADA / SALIDA -->
   <div class="movimiento-selector">
     <button class="mov-btn entrada active" id="btnEntrada" onclick="setMovimiento('ENTRADA')">
-      ✅ ENTRADA
+      <i class="fas fa-sign-in-alt"></i> ENTRADA
     </button>
     <button class="mov-btn salida" id="btnSalida" onclick="setMovimiento('SALIDA')">
-      🚪 SALIDA
+      <i class="fas fa-sign-out-alt"></i> SALIDA
     </button>
   </div>
 
@@ -398,9 +401,9 @@
     </div>
   </div>
 
-  <!-- BOTÓN ACTIVAR -->
-  <button class="btn-activar" id="btnIniciar" onclick="iniciarCamara()">
-    📷 Activar Cámara
+  <!-- BOTÓN ACTIVAR CÁMARA -->
+ <button class="btn-activar" id="btnIniciar" onclick="iniciarCamara()">
+    <i class="fas fa-camera"></i> Activar Cámara
   </button>
 
   <!-- STATUS -->
@@ -419,7 +422,9 @@
     </div>
   </div>
 
-  <div class="footer">© 2026 Instituto Mixto de Educación "Conguaquense"</div>
+  <div class="footer">
+    <i class="fas fa-shield-alt"></i> © 2026 Instituto Mixto de Educación "Conguaquense"
+  </div>
 
   <script type="module">
     const jsQR = (await import('https://esm.sh/jsqr@1.4.0')).default;
@@ -448,19 +453,36 @@
       document.getElementById('btnSalida').classList.toggle('active', tipo === 'SALIDA');
     };
 
-    function setStatus(texto, tipo) {
-      statusText.textContent = texto;
+   function setStatus(texto, tipo) {
+      const iconos = {
+        activo: '<i class="fas fa-circle-notch fa-spin"></i>',
+        exito: '<i class="fas fa-check-circle"></i>',
+        error: '<i class="fas fa-exclamation-circle"></i>',
+        '': '<i class="fas fa-clock"></i>'
+      };
+
+      const icono = iconos[tipo] || iconos[''];
+      document.getElementById('statusText').innerHTML = icono + ' ' + texto;
       statusDot.className = 'status-dot ' + (tipo || '');
     }
 
    function mostrarResultado(datos, tipo) {
       resultadoCard.className = 'resultado-card ' + tipo;
-      document.getElementById('resultadoIcon').textContent = 
-        tipo === 'exito' ? '✅' : 
-        tipo === 'procesando' ? '⏳' : '❌';
-      document.getElementById('resultadoTitulo').textContent = 
-        tipo === 'exito' ? 'Registro exitoso' : 
-        tipo === 'procesando' ? 'Procesando...' : 'Error en registro';
+
+      const iconos = {
+        exito: '<i class="fas fa-check-circle" style="color:#2ecc71; font-size:1.8rem;"></i>',
+        error: '<i class="fas fa-times-circle" style="color:#e74c3c; font-size:1.8rem;"></i>',
+        procesando: '<i class="fas fa-spinner fa-spin" style="color:#667eea; font-size:1.8rem;"></i>'
+      };
+
+      const titulos = {
+        exito: 'Registro exitoso',
+        error: 'Error en registro',
+        procesando: 'Procesando...'
+      };
+
+      document.getElementById('resultadoIcon').innerHTML = iconos[tipo] || iconos.procesando;
+      document.getElementById('resultadoTitulo').textContent = titulos[tipo] || titulos.procesando;
       document.getElementById('resultadoNombre').textContent = datos.nombre || '';
       document.getElementById('resultadoDetalle').textContent = datos.detalle || '';
 
