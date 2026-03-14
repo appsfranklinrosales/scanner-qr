@@ -493,7 +493,7 @@
     window.iniciarCamara = async function() {
       try {
         btnIniciar.style.display = 'none';
-        setStatus('Iniciando cámara...', '');
+        setStatus('Iniciando cámara...', 'procesando');
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' } }
