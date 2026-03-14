@@ -458,6 +458,7 @@
         activo: '<i class="fas fa-circle-notch fa-spin"></i>',
         exito: '<i class="fas fa-check-circle"></i>',
         error: '<i class="fas fa-exclamation-circle"></i>',
+        qr: '<i class="fa fa-qrcode"></i>'
         '': '<i class="fas fa-clock"></i>'
       };
 
@@ -592,7 +593,7 @@
 
           // Después de 3 segundos, volver a "Esperando..."
           setTimeout(() => {
-            setStatus('Esperando código QR...', 'activo');
+            setStatus('Esperando código QR...', 'qr');
           }, 3000);
 
         } else {
