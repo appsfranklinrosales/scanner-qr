@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner QR — Liceo San Pedro</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(135deg, #242b2d, #3d527c, #11b311 );
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      color: white;
+    }
+
+    /* HEADER */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      width: 100%;
+    }
+
+    .header img {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: 3px solid #11b311;
+      margin-bottom: 10px;
+      object-fit: cover;
+    }
+
+    .header h1 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f7faf7;
+      letter-spacing: 0.5px;
+    }
+
+    .header p {
+      font-size: 0.8rem;
+      color: #99c0e0;
+      margin-top: 3px;
+    }
+
+    /* SELECTOR ENTRADA/SALIDA */
+    .movimiento-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: rgba(255,255,255,0.05);
+      padding: 6px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .mov-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: transparent;
+      color: #99c0e0;
+    }
+
+    .mov-btn.entrada.active {
+      background: linear-gradient(135deg, #11b311, #5ca257);
+      color: white;
+      box-shadow: 0 4px 15px rgba(17,179,17,0.4);
+    }
+
+    .mov-btn.salida.active {
+      background: linear-gradient(135deg, #07adeb, #5f7492);
+      color: white;
+      box-shadow: 0 4px 15px rgba(7,173,235,0.4);
+    }
+
+    .mov-btn:not(.active):hover {
+      background: rgba(255,255,255,0.08);
+      color: white;
+    }
+
+    /* CONTENEDOR SCANNER */
+    .scanner-wrapper {
+      width: 100%;
+      max-width: 380px;
+      position: relative;
+    }
+
+    .scanner-box {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid rgba(17,179,17,0.4);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      aspect-ratio: 1;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    canvas { display: none; }
+
+    /* OVERLAY DEL SCANNER */
+    .scan-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .scan-frame {
+      width: 200px;
+      height: 200px;
+      position: relative;
+    }
+
+    .scan-frame::before,
+    .scan-frame::after {
+      content: '';
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-color: #11b311;
+      border-style: solid;
+    }
+
+    .scan-frame::before {
+      top: 0; left: 0;
+      border-width: 3px 0 0 3px;
+      border-radius: 4px 0 0 0;
+    }
+
+    .scan-frame::after {
+      bottom: 0; right: 0;
+      border-width: 0 3px 3px 0;
+      border-radius: 0 0 4px 0;
+    }
+
+    .corner-tr, .corner-bl {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-color: #11b311;
+      border-style: solid;
+    }
+
+    .corner-tr {
+      top: 0; right: 0;
+      border-width: 3px 3px 0 0;
+      border-radius: 0 4px 0 0;
+    }
+
+    .corner-bl {
+      bottom: 0; left: 0;
+      border-width: 0 0 3px 3px;
+      border-radius: 0 0 0 4px;
+    }
+
+    /* LÍNEA DE ESCANEO */
+    .scan-line {
+      position: absolute;
+      top: 0;
+      left: 10px;
+      right: 10px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #11b311, transparent);
+      animation: scanLine 2s linear infinite;
+      border-radius: 2px;
+      box-shadow: 0 0 8px #11b311;
+    }
+
+    @keyframes scanLine {
+      0% { top: 10px; opacity: 1; }
+      90% { opacity: 1; }
+      100% { top: 190px; opacity: 0; }
+    }
+
+    /* SOMBRA ALREDEDOR DEL FRAME */
+    .scan-shadow {
+      position: absolute;
+      inset: 0;
+      box-shadow: inset 0 0 0 9999px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    /* BOTÓN ACTIVAR */
+    .btn-activar {
+      width: 100%;
+      max-width: 380px;
+      padding: 16px;
+      background: linear-gradient(135deg, #11b311, #3d527c);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(17,179,17,0.4);
+      transition: all 0.3s ease;
+    }
+
+    .btn-activar:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(17,179,17,0.5);
+    }
+
+    .btn-activar:active {
+      transform: translateY(0);
+    }
+
+    /* STATUS */
+    .status-bar {
+      width: 100%;
+      max-width: 380px;
+      margin-top: 15px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: #99c0e0;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #99c0e0;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+
+    .status-dot.activo {
+      background: #11b311;
+      box-shadow: 0 0 8px #11b311;
+      animation: pulse 1.5s infinite;
+    }
+
+    .status-dot.procesando {
+      background: #07adeb;
+      box-shadow: 0 0 8px #07adeb;
+      animation: pulse 1.5s infinite;
+    }
+
+    .status-dot.error {
+      background: #e74c3c;
+      box-shadow: 0 0 8px #e74c3c;
+    }
+
+    .status-dot.exito {
+      background: #11b311;
+      box-shadow: 0 0 8px #11b311;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.8); }
+    }
+
+    /* RESULTADO */
+    .resultado-card {
+      width: 100%;
+      max-width: 380px;
+      margin-top: 12px;
+      padding: 16px;
+      border-radius: 12px;
+      display: none;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .resultado-card.exito {
+      background: rgba(17,179,17,0.15);
+      border: 1px solid rgba(17,179,17,0.4);
+      display: flex;
+      animation: slideIn 0.3s ease;
+    }
+
+    .resultado-card.error {
+      background: rgba(231,76,60,0.15);
+      border: 1px solid rgba(231,76,60,0.4);
+      display: flex;
+      animation: slideIn 0.3s ease;
+    }
+
+    .resultado-card.procesando {
+      background: rgba(7,173,235,0.15);
+      border: 1px solid rgba(7,173,235,0.4);
+      display: flex;
+      animation: slideIn 0.3s ease;
+    }
+
+    .resultado-icono {
+      font-size: 1.8rem;
+      flex-shrink: 0;
+      width: 40px;
+      text-align: center;
+    }
+
+    .resultado-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .resultado-titulo {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .resultado-card.procesando .resultado-titulo { color: #07adeb; }
+    .resultado-card.exito .resultado-titulo { color: #11b311; }
+    .resultado-card.error .resultado-titulo { color: #e74c3c; }
+
+    .resultado-nombre {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f7faf7;
+    }
+
+    .resultado-detalle {
+      font-size: 0.8rem;
+      color: #99c0e0;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* FOOTER */
+    .footer {
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: #5f7492;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <img src="https://firebasestorage.googleapis.com/v0/b/apps-franklin.appspot.com/o/Liceo%20San%20Pedro%2FLOGO%20Liceo%20San%20Pedro.jpeg?alt=media&token=e8f54564-24c6-42e1-8f06-6ee8426296ad" alt="Logo Liceo San Pedro">
+    <h1>LICEO SAN PEDRO</h1>
+    <p>Sistema de Registro de Asistencia</p>
+  </div>
+
+  <!-- SELECTOR ENTRADA / SALIDA -->
+  <div class="movimiento-selector">
+    <button class="mov-btn entrada active" id="btnEntrada" onclick="setMovimiento('ENTRADA')">
+      <i class="fas fa-sign-in-alt"></i> ENTRADA
+    </button>
+    <button class="mov-btn salida" id="btnSalida" onclick="setMovimiento('SALIDA')">
+      <i class="fas fa-sign-out-alt"></i> SALIDA
+    </button>
+  </div>
+
+  <!-- SCANNER -->
+  <div class="scanner-wrapper">
+    <div class="scanner-box" id="scannerBox">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas"></canvas>
+      <div class="scan-overlay" id="scanOverlay" style="display:none;">
+        <div class="scan-shadow"></div>
+        <div class="scan-frame">
+          <div class="corner-tr"></div>
+          <div class="corner-bl"></div>
+          <div class="scan-line"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÓN ACTIVAR CÁMARA -->
+  <button class="btn-activar" id="btnIniciar" onclick="iniciarCamara()">
+    <i class="fas fa-camera"></i> Activar Cámara
+  </button>
+
+  <!-- STATUS -->
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Presiona "Activar Cámara" para comenzar</span>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="resultado-card" id="resultadoCard">
+    <div class="resultado-icono" id="resultadoIcon"></div>
+    <div class="resultado-info">
+      <div class="resultado-titulo" id="resultadoTitulo"></div>
+      <div class="resultado-nombre" id="resultadoNombre"></div>
+      <div class="resultado-detalle" id="resultadoDetalle"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <i class="fas fa-shield-alt"></i> © 2026 Liceo San Pedro
+  </div>
+
+  <script type="module">
+    const jsQR = (await import('https://esm.sh/jsqr@1.4.0')).default;
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const statusDot = document.getElementById('statusDot');
+    const resultadoCard = document.getElementById('resultadoCard');
+    const scanOverlay = document.getElementById('scanOverlay');
+    const btnIniciar = document.getElementById('btnIniciar');
+
+    let scanning = false;
+    let lastCode = '';
+    let lastTime = 0;
+    let frameCount = 0;
+    let movimiento = 'ENTRADA';
+    const opener = window.opener;
+
+    // Cambiar movimiento
+    window.setMovimiento = function(tipo) {
+      movimiento = tipo;
+      document.getElementById('btnEntrada').classList.toggle('active', tipo === 'ENTRADA');
+      document.getElementById('btnSalida').classList.toggle('active', tipo === 'SALIDA');
+    };
+
+    function setStatus(texto, tipo) {
+      const iconos = {
+        activo: '<i class="fas fa-qrcode"></i>',
+        procesando: '<i class="fas fa-circle-notch fa-spin"></i>',
+        exito: '<i class="fas fa-check-circle"></i>',
+        error: '<i class="fas fa-exclamation-circle"></i>',
+        '': '<i class="fas fa-clock"></i>'
+      };
+      const icono = iconos[tipo] || iconos[''];
+      document.getElementById('statusText').innerHTML = icono + ' ' + texto;
+      statusDot.className = 'status-dot ' + (tipo || '');
+    }
+
+    function mostrarResultado(datos, tipo) {
+      resultadoCard.className = 'resultado-card ' + tipo;
+
+      const iconos = {
+        exito: '<i class="fas fa-check-circle" style="color:#11b311; font-size:1.8rem;"></i>',
+        error: '<i class="fas fa-times-circle" style="color:#e74c3c; font-size:1.8rem;"></i>',
+        procesando: '<i class="fas fa-spinner fa-spin" style="color:#07adeb; font-size:1.8rem;"></i>'
+      };
+
+      const titulos = {
+        exito: 'Registro exitoso',
+        error: 'Error en registro',
+        procesando: 'Procesando...'
+      };
+
+      document.getElementById('resultadoIcon').innerHTML = iconos[tipo] || iconos.procesando;
+      document.getElementById('resultadoTitulo').textContent = titulos[tipo] || titulos.procesando;
+      document.getElementById('resultadoNombre').textContent = datos.nombre || '';
+      document.getElementById('resultadoDetalle').textContent = datos.detalle || '';
+    }
+
+    // Iniciar cámara
+    window.iniciarCamara = async function() {
+      try {
+        btnIniciar.style.display = 'none';
+        setStatus('Iniciando cámara...', 'procesando');
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } }
+        });
+
+        video.srcObject = stream;
+        await video.play();
+
+        scanOverlay.style.display = 'flex';
+        setStatus('Esperando código QR...', 'activo');
+        scanning = true;
+        requestAnimationFrame(scanFrame);
+
+      } catch (err) {
+        setStatus('Error: ' + err.message, 'error');
+        btnIniciar.style.display = 'flex';
+        if (opener) {
+          opener.postMessage({ tipo: 'error_camara', mensaje: err.message }, '*');
+        }
+      }
+    };
+
+    function scanFrame() {
+      if (!scanning) {
+        requestAnimationFrame(scanFrame);
+        return;
+      }
+
+      frameCount++;
+      if (frameCount % 10 !== 0) {
+        requestAnimationFrame(scanFrame);
+        return;
+      }
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert'
+        });
+
+        if (code && code.data && code.data.trim() !== '') {
+          const now = Date.now();
+          if (code.data !== lastCode || (now - lastTime) > 3000) {
+            lastCode = code.data;
+            lastTime = now;
+
+            setStatus('Procesando...', 'procesando');
+            mostrarResultado({
+              nombre: 'Verificando...',
+              detalle: 'Consultando servidor...'
+            }, 'procesando');
+
+            if (opener) {
+              opener.postMessage({
+                tipo: 'qr_escaneado',
+                codigo: code.data,
+                movimiento: movimiento
+              }, '*');
+            }
+
+            scanning = false;
+            setTimeout(() => {
+              lastCode = '';
+              scanning = true;
+              setStatus('Esperando código QR...', 'activo');
+            }, 3000);
+
+            requestAnimationFrame(scanFrame);
+            return;
+          }
+        }
+      }
+
+      requestAnimationFrame(scanFrame);
+    }
+
+    // Recibir resultado del servidor desde GAS
+    window.addEventListener('message', function(event) {
+      if (!event.data || !event.data.tipo) return;
+
+      if (event.data.tipo === 'resultado_registro') {
+        if (event.data.exito) {
+          setStatus('Registro exitoso', 'exito');
+          mostrarResultado({
+            nombre: event.data.nombre,
+            detalle: event.data.detalle
+          }, 'exito');
+
+          setTimeout(() => {
+            setStatus('Esperando código QR...', 'activo');
+          }, 3000);
+
+        } else {
+          setStatus('Error en registro', 'error');
+          mostrarResultado({
+            nombre: event.data.nombre,
+            detalle: event.data.detalle
+          }, 'error');
+
+          setTimeout(() => {
+            setStatus('Esperando código QR...', 'activo');
+          }, 3000);
+        }
+      }
+    });
+
+  </script>
+</body>
+</html>
